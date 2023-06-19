@@ -5,10 +5,10 @@ export const SubredditSchema = z.object({
 });
 
 export const SubredditSubscriptionSchema = z.object({
-  subredditId: z.string().uuid(),
+  subredditId: z.string(),
 });
 
 export type CreateSubredditPayload = z.infer<typeof SubredditSchema>;
-export type SubscribeTpSubredditPayload = z.infer<
+export type SubscribeToSubredditPayload = z.infer<
   typeof SubredditSubscriptionSchema
 >;
