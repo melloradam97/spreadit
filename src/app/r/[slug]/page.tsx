@@ -1,4 +1,5 @@
 import CreatePost from "@/components/CreatePost";
+import PostFeed from "@/components/PostFeed";
 import { INFINITE_SCROLLING_PAGINATION_RESULTS } from "@/config";
 import { getAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -42,7 +43,12 @@ const page = async ({ params }: PageProps) => {
       <h1 className="font-bold text-3xl md:text-4xl h-14">
         r/{subreddit.name}
       </h1>
-      {session && <CreatePost session={session} />}
+      {session && (
+        <div className="mb-6">
+          <CreatePost session={session} />
+        </div>
+      )}
+      <PostFeed initialPosts={subreddit.posts} subredditName={subreddit.name} />
     </div>
   );
 };
