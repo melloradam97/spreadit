@@ -106,7 +106,7 @@ const ToggleSubscription: FC<ToggleSubscriptionProps> = ({
       onClick={() => subscribe()}
       className="w-full mt-1 mb-4"
     >
-      Join to post
+      Join
     </Button>
   );
 };

@@ -67,7 +67,7 @@ export async function PATCH(req: Request) {
             createdAt: post.createdAt,
           };
 
-          await redis.hset(`post:${postId}`, cachePayload); // Store the post data as a hash
+          await redis.hset(`post:${postId}`, cachePayload);
         }
 
         return new Response("OK");
