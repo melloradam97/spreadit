@@ -19,7 +19,7 @@ export async function PATCH(req: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    const isVote = await db.vote.findFirst({
+    const existingVote = await db.vote.findFirst({
       where: {
         userId: session.user.id,
         postId,
@@ -36,26 +36,48 @@ export async function PATCH(req: Request) {
       },
     });
 
-    if (!post) return new Response("Post not found", { status: 404 });
+    if (!post) {
+      return new Response("Post not found", { status: 404 });
+    }
 
-    if (isVote) {
-      if (isVote.type === voteType) {
+    if (existingVote) {
+      if (existingVote.type === voteType) {
         await db.vote.delete({
           where: {
             userId_postId: {
-              userId: session.user.id,
               postId,
+              userId: session.user.id,
             },
           },
         });
+
+        const votesAmt = post.votes.reduce((acc, vote) => {
+          if (vote.type === "UP") return acc + 1;
+          if (vote.type === "DOWN") return acc - 1;
+          return acc;
+        }, 0);
+
+        if (votesAmt >= CACHE_AFTER_UPVOTES) {
+          const cachePayload: CachedPost = {
+            authorUsername: post.author.username ?? "",
+            content: JSON.stringify(post.content),
+            id: post.id,
+            title: post.title,
+            currentVote: null,
+            createdAt: post.createdAt,
+          };
+
+          await redis.hset(`post:${postId}`, cachePayload); // Store the post data as a hash
+        }
+
         return new Response("OK");
       }
 
       await db.vote.update({
         where: {
           userId_postId: {
-            userId: session.user.id,
             postId,
+            userId: session.user.id,
           },
         },
         data: {
@@ -63,25 +85,23 @@ export async function PATCH(req: Request) {
         },
       });
 
-      const votesAmount = post.votes.reduce((acc, vote) => {
-        if (vote.type === "UP") {
-          return acc + 1;
-        } else {
-          return acc - 1;
-        }
+      const votesAmt = post.votes.reduce((acc, vote) => {
+        if (vote.type === "UP") return acc + 1;
+        if (vote.type === "DOWN") return acc - 1;
+        return acc;
       }, 0);
 
-      if (votesAmount >= CACHE_AFTER_UPVOTES) {
+      if (votesAmt >= CACHE_AFTER_UPVOTES) {
         const cachePayload: CachedPost = {
+          authorUsername: post.author.username ?? "",
+          content: JSON.stringify(post.content),
           id: post.id,
           title: post.title,
-          content: JSON.stringify(post.content),
-          authorUsername: post.author.username ?? "",
           currentVote: voteType,
           createdAt: post.createdAt,
         };
 
-        await redis.hset(`post:${post.id}`, cachePayload);
+        await redis.hset(`post:${postId}`, cachePayload);
       }
 
       return new Response("OK");
@@ -95,35 +115,34 @@ export async function PATCH(req: Request) {
       },
     });
 
-    const votesAmount = post.votes.reduce((acc, vote) => {
-      if (vote.type === "UP") {
-        return acc + 1;
-      } else {
-        return acc - 1;
-      }
+    const votesAmt = post.votes.reduce((acc, vote) => {
+      if (vote.type === "UP") return acc + 1;
+      if (vote.type === "DOWN") return acc - 1;
+      return acc;
     }, 0);
 
-    if (votesAmount >= CACHE_AFTER_UPVOTES) {
+    if (votesAmt >= CACHE_AFTER_UPVOTES) {
       const cachePayload: CachedPost = {
+        authorUsername: post.author.username ?? "",
+        content: JSON.stringify(post.content),
         id: post.id,
         title: post.title,
-        content: JSON.stringify(post.content),
-        authorUsername: post.author.username ?? "",
         currentVote: voteType,
         createdAt: post.createdAt,
       };
 
-      await redis.hset(`post:${post.id}`, cachePayload);
+      await redis.hset(`post:${postId}`, cachePayload);
     }
 
     return new Response("OK");
   } catch (error) {
+    error;
     if (error instanceof z.ZodError) {
-      return new Response(error.message, { status: 422 });
+      return new Response(error.message, { status: 400 });
     }
 
     return new Response(
-      "Could not submit vote to post. Please try again later.",
+      "Could not post to subreddit at this time. Please try later",
       { status: 500 }
     );
   }
