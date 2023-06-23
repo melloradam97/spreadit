@@ -17,7 +17,7 @@ const CreatePost: FC<CreatePostProps> = ({ session }) => {
   const pathname = usePathname();
 
   return (
-    <li className="overflow-hidden rounded-md bg-white shadow">
+    <div className="overflow-hidden rounded-md bg-white shadow">
       <div className="h-full px-6 py-4 flex justify-between gap-6">
         <div className="relative">
           <UserAvatar
@@ -46,7 +46,7 @@ const CreatePost: FC<CreatePostProps> = ({ session }) => {
           <Link2 className="text-zinc-600" />
         </Button>
       </div>
-    </li>
+    </div>
   );
 };
 
